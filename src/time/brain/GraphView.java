@@ -35,8 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 public class GraphView extends ImageView {
 
 	
-	private final String XMLNS = "http://schemas.android.com/apk/res/android";
-	private String CUSTOM_XMLNS;
+	private final String XMLNS = "http://schemas.android.com/apk/res/android", CUSTOM_XMLNS = "http://schemas.android.com/apk/time.brain";
 	private Context context;
 	private int background_color, width, height, y_ticks, max, min = 0;
 	/** Represents the value of a single pixel. */
@@ -66,7 +65,6 @@ public class GraphView extends ImageView {
 
 	public GraphView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		CUSTOM_XMLNS = "http://schemas.android.com/apk/res/" + context.getPackageName();
 		int temp_max = attrs.getAttributeIntValue(CUSTOM_XMLNS, "maxValue", -123456);
 		if(temp_max == -123456) {
 			temp_max = 100;
@@ -83,7 +81,7 @@ public class GraphView extends ImageView {
 				context,
 				attrs.getAttributeIntValue(XMLNS, "background", 0xff000000),
 				attrs.getAttributeValue(XMLNS, "tag"),
-				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 7),
+				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 5),
 				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawCircles", false),
 				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "enablePopup", true),
 				temp_max, temp_min);
@@ -91,7 +89,6 @@ public class GraphView extends ImageView {
 
 	public GraphView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		CUSTOM_XMLNS = "http://schemas.android.com/apk/res/" + context.getPackageName();
 		int temp_max = attrs.getAttributeIntValue(CUSTOM_XMLNS, "maxValue", -123456);
 		if(temp_max == -123456) {
 			temp_max = 100;
@@ -108,7 +105,7 @@ public class GraphView extends ImageView {
 				context,
 				attrs.getAttributeIntValue(XMLNS, "background", 0xff000000),
 				attrs.getAttributeValue(XMLNS, "tag"),
-				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 7),
+				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 5),
 				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawCircles", false),
 				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "enablePopup", true),
 				temp_max, temp_min);
@@ -209,7 +206,7 @@ public class GraphView extends ImageView {
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent e) {
-		if(!popupEnabled) return false;
+		if(!popupEnabled || lines.isEmpty()) return false;
 		if(e.getAction() != MotionEvent.ACTION_UP) return true;
 		// Dismiss existing popup, unbulge Plots and cancel any pending clearpopup call
 		if(popup != null) popup.dismiss();
@@ -260,7 +257,9 @@ public class GraphView extends ImageView {
 		text_paint.setTextSize(title_size);
 		canvas.drawText(tag, width-2, text_paint.getTextSize(), text_paint);
 		// Draw vertical lines. Uses the first PlotLine to measure
-		int count = lines.get(0).getPlotCount();
+		int count;
+		if(!lines.isEmpty()) count = lines.get(0).getPlotCount();
+		else count = 6;
 		int space_between = (int) ((double)width/count);
 		guideline.setStrokeWidth(1f);
 		for(int i=1; i<count; i++) {
@@ -319,6 +318,10 @@ public class GraphView extends ImageView {
 			}
 		if(!userProvidedMax)max = new_max;
 		if(!userProvidedMin)min = new_min;
+		if(lines.isEmpty()) {
+			max = 100;
+			min = 0;
+		}
 		double scale = getScale();
 		System.out.println("autoscale() max=" + max + " min=" + min + " scale=" + scale);
 	}
