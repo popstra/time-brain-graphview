@@ -142,7 +142,7 @@ public class GraphView extends ImageView {
 		requestData();
 	}
 	
-	private void requestData() {
+	public void requestData() {
 		for(PlotLine line : lines)
 			for(int i=0; i<line.getPlotCount(); i++) if(data_receiver != null) data_receiver.onDataRequested(line, i);
 	}
@@ -156,10 +156,10 @@ public class GraphView extends ImageView {
 		data_receiver = receiver;
 	}
 	
-	/** Set the size of the text used to draw the title of the GraphView. The View's title is set via the <b>android:tag</b> xml property, or by {@link #setTitle(String title)}.
+	/** Set the size of the text used to draw the text labels of the GraphView. The View's title is set via the <b>android:tag</b> xml property, or by {@link #setTitle(String title)}.
 	 * @param size the text size in float, ie - 22f
 	 */
-	public void setTitleTextSize(float size) {
+	public void setTextSize(float size) {
 		title_size = size;
 	}
 	

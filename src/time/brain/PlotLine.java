@@ -24,7 +24,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 public class PlotLine extends Path {
 
-	private int x_ticks;
 	private ArrayList<Plot> plots;
 	private String label = "";
 	private Paint line_paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -43,7 +42,6 @@ public class PlotLine extends Path {
 	 * @return this PlotLine, for chaining
 	 */
 	public PlotLine setPlotCount(int number) {
-		x_ticks = number;
 		// Resize array and fill with empty Ticks
 		plots = new ArrayList<Plot>(number);
 		for(int i=0; i<number; i++) plots.add(new Plot());
@@ -61,7 +59,7 @@ public class PlotLine extends Path {
 	}
 	
 	public int getPlotCount() {
-		return x_ticks;
+		return plots.size();
 	}
 	
 	public ArrayList<Plot> getData() {
