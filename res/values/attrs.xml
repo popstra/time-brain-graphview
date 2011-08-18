@@ -8,6 +8,8 @@
 	<attr name="maxValue" format="integer"/>
 	<attr name="drawCircles" format="boolean"/>
 	<attr name="enablePopup" format="boolean"/>
+	<attr name="verticalGuidelines" format="boolean"/>
+	<attr name="drawZero" format="boolean"/>
 
 </declare-styleable>
 

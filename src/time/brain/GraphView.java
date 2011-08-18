@@ -7,6 +7,7 @@ import time.brain.PlotLine.Plot;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -37,16 +38,17 @@ public class GraphView extends ImageView {
 	
 	private final String XMLNS = "http://schemas.android.com/apk/res/android", CUSTOM_XMLNS = "http://schemas.android.com/apk/time.brain";
 	private Context context;
-	private int background_color, width, height, y_ticks, max, min = 0;
+	private int background_color = 0xffcccccc, width, height, y_ticks = 5, max = 100, min = 0;
 	/** Represents the value of a single pixel. */
 	private double scale;
-	private float title_size = 18f;
+	private float title_size = 12f;
 	private DataRequestReceiver data_receiver;
-	private String tag;
+	private DashPathEffect dashes = new DashPathEffect(new float[] {5, 5}, 10f);
+	private String tag = "";
 	private Paint text_paint = new Paint(Paint.LINEAR_TEXT_FLAG), guideline = new Paint(), circles = new Paint(Paint.ANTI_ALIAS_FLAG);
 	private ArrayList<PlotLine> lines = new ArrayList<PlotLine>();
 	private PopupWindow popup;
-	private boolean alwaysDrawCircles, popupEnabled, userProvidedMax, userProvidedMin;
+	private boolean drawZero = true, alwaysDrawCircles = false, popupEnabled = true, userProvidedMax = false, userProvidedMin = false, drawVerticalGuidelines = true;
 	
 	/** Dismisses the PopupWindow, as well as un-bulging all Plots. */
 	private Runnable clearpopup = new Runnable() {
@@ -60,73 +62,48 @@ public class GraphView extends ImageView {
 	
 	public GraphView(Context context) {
 		super(context);
-		init(context, 0xff000000, "", 5, false, true, 100, 0);
+		init(context, null);
 	}
 
 	public GraphView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		int temp_max = attrs.getAttributeIntValue(CUSTOM_XMLNS, "maxValue", -123456);
-		if(temp_max == -123456) {
-			temp_max = 100;
-			userProvidedMax = false;
-		}
-		else userProvidedMax = true;
-		int temp_min = attrs.getAttributeIntValue(CUSTOM_XMLNS, "minValue", 123456);
-		if(temp_min == 123456) {
-			temp_min = 0;
-			userProvidedMin = false;
-		}
-		else userProvidedMin = true;
-		init(
-				context,
-				attrs.getAttributeIntValue(XMLNS, "background", 0xff000000),
-				attrs.getAttributeValue(XMLNS, "tag"),
-				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 5),
-				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawCircles", false),
-				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "enablePopup", true),
-				temp_max, temp_min);
+		init(context, attrs);
 	}
 
 	public GraphView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
-		int temp_max = attrs.getAttributeIntValue(CUSTOM_XMLNS, "maxValue", -123456);
-		if(temp_max == -123456) {
-			temp_max = 100;
-			userProvidedMax = false;
-		}
-		else userProvidedMax = true;
-		int temp_min = attrs.getAttributeIntValue(CUSTOM_XMLNS, "minValue", 123456);
-		if(temp_min == 123456) {
-			temp_min = 0;
-			userProvidedMin = false;
-		}
-		else userProvidedMin = true;
-		init(
-				context,
-				attrs.getAttributeIntValue(XMLNS, "background", 0xff000000),
-				attrs.getAttributeValue(XMLNS, "tag"),
-				attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 5),
-				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawCircles", false),
-				attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "enablePopup", true),
-				temp_max, temp_min);
+		init(context, attrs);
 	}
 	
-	private void init(Context ctx, int color, String attr_tag, int num_yticks, boolean drawCircles, boolean doPopup, int mymax, int mymin) {
+	private void init(Context ctx, AttributeSet attrs) {
 		context = ctx;
-		background_color = color;
-		if(attr_tag == null) tag = "";
-		else tag = attr_tag;
-		y_ticks = num_yticks;
-		max = mymax;
-		min = mymin;
-		popupEnabled = doPopup;
-		alwaysDrawCircles = drawCircles;
+		// Get values from attrs if not null
+		if(attrs != null) {
+				int temp_max = attrs.getAttributeIntValue(CUSTOM_XMLNS, "maxValue", -123456);
+				if(temp_max == -123456) temp_max = 100;
+				else userProvidedMax = true;
+				
+				int temp_min = attrs.getAttributeIntValue(CUSTOM_XMLNS, "minValue", 123456);
+				if(temp_min == 123456)  temp_min = 0;
+				else userProvidedMin = true;
+				
+				background_color = attrs.getAttributeIntValue(XMLNS, "background", 0xff000000);
+				String attr_tag = attrs.getAttributeValue(XMLNS, "tag");
+				if(attr_tag != null) tag = attr_tag;
+				y_ticks = attrs.getAttributeIntValue(CUSTOM_XMLNS, "numGuidelines", 5);
+				max = temp_max;
+				min = temp_min;
+				popupEnabled = attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "enablePopup", true);
+				drawVerticalGuidelines = attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "verticalGuidelines", true);
+				alwaysDrawCircles = attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawCircles", false);
+				drawZero = attrs.getAttributeBooleanValue(CUSTOM_XMLNS, "drawZero", true);
+		}
 		text_paint.setStyle(Paint.Style.STROKE);
 		text_paint.setTextSize(title_size);
-		text_paint.setColor(darken(color, 0.8f));
+		text_paint.setColor(darken(background_color, 0.8f));
 		text_paint.setAntiAlias(true);
 		guideline.setStyle(Paint.Style.STROKE);
-		guideline.setColor(darken(color, 0.9f));
+		guideline.setColor(darken(background_color, 0.9f));
 		guideline.setStrokeWidth(1f);
 		circles.setStyle(Paint.Style.FILL_AND_STROKE);
 	}
@@ -196,7 +173,7 @@ public class GraphView extends ImageView {
 	}
 	
 	private String format(double value) {
-		return new DecimalFormat("@@@").format(value);
+		return new DecimalFormat("@##").format(value);
 	}
 	
 	/** Returns the position of the x-axis on the View. */
@@ -261,14 +238,17 @@ public class GraphView extends ImageView {
 		if(!lines.isEmpty()) count = lines.get(0).getPlotCount();
 		else count = 6;
 		int space_between = (int) ((double)width/count);
-		guideline.setStrokeWidth(1f);
-		for(int i=1; i<count; i++) {
-			float xpos = i*space_between;
-			canvas.drawLine(xpos, height, xpos, 0, guideline);
+		if(drawVerticalGuidelines) {
+			guideline.setPathEffect(dashes);
+			for(int i=1; i<count; i++) {
+				float xpos = i*space_between;
+				canvas.drawLine(xpos, height, xpos, 0, guideline);
+			}
 		}
 		// Draw horizontal lines. Autoscale first, so we know how to label lines
 		autoscale();
 		text_paint.setTextSize(title_size*0.7f);
+		guideline.setPathEffect(dashes);
 		for(int y=1; y<y_ticks+1; y++) {
 			double percent = y/(double)(y_ticks+1);
 			float ypos = (float) (height - (height*percent));
@@ -276,12 +256,14 @@ public class GraphView extends ImageView {
 			// Get the value at this ypos
 			String value = getValueAtPixelHeight((int) ypos);
 			text_paint.setTextAlign(Paint.Align.LEFT);
-			canvas.drawText(value, 2, ypos + text_paint.getTextSize()/2, text_paint);
+			canvas.drawText(value, 2, ypos, text_paint);
 		}
-		// Draw bold line on x-axis
-		guideline.setStrokeWidth(2f);
-		int ypos_of_zero = getPixelHeightofZero();
-		canvas.drawLine(0, ypos_of_zero, width, ypos_of_zero, guideline);
+		// Draw line on x-axis
+		if(drawZero) {
+			guideline.setPathEffect(null);
+			int ypos_of_zero = getPixelHeightofZero();
+			canvas.drawLine(0, ypos_of_zero, width, ypos_of_zero, guideline);
+		}
 		// Plot all lines. Also sets x/y values to Plots for later use
 		for(PlotLine line : lines) {
 			line.reset();
